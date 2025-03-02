@@ -1,28 +1,52 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
+from flask import Flask, render_template, jsonify
 import requests
-from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)
 
-def get_palavra_rara():
+# Função para obter uma palavra aleatória da API
+def obter_palavra_api():
     try:
-        response = requests.get("https://api.datamuse.com/words?sp=?&max=1&md=d&v=enwiki")
-        words = response.json()
+        # Buscar uma palavra aleatória
+        resposta = requests.get("https://api.dicionario-aberto.net/random")
+        if resposta.status_code != 200:
+            return {"palavra": "Erro", "significado": "Não foi possível obter uma palavra."}
 
-        if words:
-            word = words[0]['word']
-            meaning = words[0].get('defs', ["Sem definição disponível."])[0].split('\t')[-1]
-            return {"palavra": word, "significado": meaning, "exemplo": "Exemplo não disponível."}
+        dados = resposta.json()
+        palavra = dados.get('word', 'Desconhecido')
+
+        # Buscar definição da palavra
+        resposta_def = requests.get(f"https://api.dicionario-aberto.net/word/{palavra}")
+        if resposta_def.status_code == 200:
+            definicoes = resposta_def.json()
+
+            if definicoes and 'xml' in definicoes[0]:  # Extrair significado do XML
+                from xml.etree import ElementTree as ET
+                xml_content = definicoes[0]['xml']
+                root = ET.fromstring(xml_content)
+                significado = root.find(".//def").text if root.find(".//def") is not None else "Significado não encontrado."
+            else:
+                significado = "Significado não encontrado."
+
         else:
-            return {"error": "Nenhuma palavra encontrada."}
-    except Exception as e:
-        return {"error": str(e)}
+            significado = "Sem definição disponível."
 
-@app.route('/palavra', methods=['GET'])
-def palavra():
-    return jsonify(get_palavra_rara())
+        return {
+            "palavra": palavra.capitalize(),
+            "significado": significado.strip().replace("\n", " ")
+        }
+
+    except Exception as e:
+        return {"palavra": "Erro", "significado": f"Erro na API: {str(e)}"}
+
+@app.route('/')
+def index():
+    palavra_do_dia = obter_palavra_api()
+    return render_template('index.html', palavra=palavra_do_dia)
+
+@app.route('/nova-palavra')
+def nova_palavra():
+    palavra_aleatoria = obter_palavra_api()
+    return jsonify(palavra_aleatoria)
 
 if __name__ == '__main__':
     app.run(debug=True)
