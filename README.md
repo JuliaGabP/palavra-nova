@@ -1,10 +1,10 @@
-# 📖 Palavra do Dia
+# 📖 Palavra Nova
 
 Um site simples e divertido desenvolvido com **Flask** para mostrar uma palavra pouco usada da língua portuguesa e seu significado. As palavras são obtidas da API do **Dicionário Aberto**.
 
 ## 🚀 Funcionalidades
 
-- Exibe uma palavra aleatória por dia com seu significado.
+- Exibe uma palavra aleatória com seu significado.
 - Permite gerar uma nova palavra ao clicar no botão.
 - Interface amigável e com cores em tons pastéis.
 
